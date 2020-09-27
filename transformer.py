@@ -9,14 +9,13 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 from tst import Transformer
-from utils import create_input_data, StockDataset, eval
+from utils import create_input_data, StockDataset, eval, plot_one_stock
 
-def train(N_EPOCHS, train_loader):
+def train(net, N_EPOCHS, train_loader):
     # initailize the network, optimizer and loss function
-    net = Transformer(d_input, d_model, d_output, q, v, h, N, attention_size=attention_size,
-                  dropout=dropout, chunk_mode=chunk_mode, pe=pe).to(device)
     optimizer = optim.Adam(net.parameters(), lr=LR)
     criterion = nn.MSELoss()
     writer = SummaryWriter(log_dir='runs/trans')
@@ -31,7 +30,7 @@ def train(N_EPOCHS, train_loader):
             y_pred = net(x_batch)
             loss = criterion(y_pred, y_batch)
 
-            if i == 1:
+            if i == 0:
                 print(x_batch.size())
                 print(y_batch.size())
                 print(y_pred.size())
@@ -42,10 +41,11 @@ def train(N_EPOCHS, train_loader):
             optimizer.step()
 
             running_loss += loss.item()
-            if i % 1000 == 999:
+            if (i + 1) % 100 == 0:
                 # ...log the running loss
-                print("loss:", running_loss / 1000, " seq:", i + 1)
-                writer.add_scalar('training loss with)', running_loss / 1000, i + 1)
+                print("loss:", running_loss / 100, " batch:", (i + 1))
+                writer.add_scalar('training loss trans{}'.format(datetime.today().strftime('%Y-%m-%d')),
+                                     running_loss / 100, (i + 1) + epoch * 9700)
                 running_loss = 0.0
 
     torch.save(net.state_dict(), "weights/trans")
@@ -66,6 +66,7 @@ if __name__ == "__main__":
             'data/sp500_joined_high.csv',
             'data/sp500_joined_low.csv',
             'data/sp500_joined_volume.csv']
+    MODEL_PATH = 'weights/trans'
     BATCH_SIZE = 100
     N_EPOCHS = 1
     N_LAGS = 25
@@ -97,9 +98,9 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
 
-    #train(N_EPOCHS, train_loader)
-
     net = Transformer(d_input, d_model, d_output, q, v, h, N, attention_size=attention_size,
                   dropout=dropout, chunk_mode=chunk_mode, pe=pe).to(device)
-    eval(net, "weights/trans" ,test_loader)
-    
+
+    #train(net, N_EPOCHS, train_loader)
+    #eval(net, MODEL_PATH, test_loader)
+    plot_one_stock(X_test, y_test, net, MODEL_PATH, transformer=True)

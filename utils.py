@@ -9,6 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -97,25 +98,53 @@ def eval(net, path ,test_loader):
         mse = total_loss / len(test_loader.dataset)
     print("The MSE is ", mse)
 
+def plot_one_stock(X_test, y_test, net, path, transformer=False):
+    stock_idx = 0
+    X_test = X_test[:, stock_idx, :, :] # choose the first stock
+    X_test = X_test.transpose(0, 1).transpose(1, 2)
+    y_test = y_test[0][stock_idx]
+    net.load_state_dict(torch.load(path))
+    net.eval()
+
+    with torch.no_grad():
+        if transformer:
+            y_test = y_test[:, -1]
+            y_pred = net(X_test)
+            y_pred = y_pred[:, -1, :].squeeze(0)
+        else:
+            y_pred = net(X_test)
+
+    time_step = range(len(y_test))
+    plt.plot(time_step, y_pred, label='Prediction')
+    plt.plot(time_step, y_test, label='Actual price')
+    plt.title("one stock grpah")
+    plt.ylabel("normalized adjusted close price")
+    plt.xlabel("time step")
+    plt.legend()
+    #plt.savefig("stock.png")
+    plt.show() 
+    
 class Net(nn.Module):
     # simple forward network
     def __init__(self, n_lags):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(6, 20)
-        self.fc2 = nn.Linear(20, 40)
-        self.fc3 = nn.Linear(40, 20)
-        self.fc4 = nn.Linear(20 * n_lags, 1)
+        self.fc1 = nn.Linear(6 * n_lags, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 64)
+        self.fc4 = nn.Linear(64, 32)
+        self.fc5 = nn.Linear(32, 1)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc1(torch.flatten(x, start_dim=1)))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        x = self.fc4(torch.flatten(x, start_dim=1))
+        x = F.relu(self.fc4(x))
+        x = torch.sigmoid(self.fc5(x))
         return x
 
 def train(net, N_EPOCHS, train_loader):
     # initailize the network, optimizer and loss function
-    optimizer = optim.Adam(net.parameters(), lr=0.001)
+    optimizer = optim.Adam(net.parameters(), lr=0.0001)
     criterion = nn.MSELoss()
     writer = SummaryWriter(log_dir='runs/ff')
 
@@ -134,10 +163,11 @@ def train(net, N_EPOCHS, train_loader):
             optimizer.step()
 
             running_loss += loss.item()
-            if i % 1000 == 999:
+            if (i + 1) % 100 == 0:
                 # ...log the running loss
-                print("loss:", running_loss / 1000, " seq:", i + 1)
-                writer.add_scalar('training loss with)', running_loss / 1000, i + 1)
+                print("loss:", running_loss / 100, " batch:", (i + 1))
+                writer.add_scalar('training loss ff{}'.format(datetime.today().strftime('%Y-%m-%d')),
+                                     running_loss / 100, (i + 1) + epoch * 9700)
                 running_loss = 0.0
 
     torch.save(net.state_dict(), "weights/ff")
@@ -147,6 +177,7 @@ def train(net, N_EPOCHS, train_loader):
 if __name__ == "__main__":
     # sample framework
     # fix the random seed
+    print(datetime.today().strftime('%Y-%m-%d'))
     torch.manual_seed(0)
     np.random.seed(0)
 
@@ -157,8 +188,9 @@ if __name__ == "__main__":
             'data/sp500_joined_high.csv',
             'data/sp500_joined_low.csv',
             'data/sp500_joined_volume.csv']
-    BATCH_SIZE = 10
-    N_EPOCHS = 1
+    MODEL_PATH="weights/ff"
+    BATCH_SIZE = 100
+    N_EPOCHS = 3
     N_LAGS = 25
 
     # load the dataset
@@ -171,7 +203,9 @@ if __name__ == "__main__":
                             batch_size=BATCH_SIZE)
     net = Net(N_LAGS).to(device)
     #train(net, N_EPOCHS, train_loader)
-    eval(net, path="weights/ff" , test_loader=test_loader)
+    #eval(net, MODEL_PATH, test_loader=test_loader)
+    plot_one_stock(X_test, y_test, net, MODEL_PATH)
 
+    #The MSE is  0.0003273937825206491
     
 
