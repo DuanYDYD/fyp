@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 from tst import Transformer
-from utils import create_input_data, StockDataset, eval, plot_one_stock
+from utils import create_input_data, StockDataset, eval
 
-def train(net, N_EPOCHS, train_loader):
+def train(net, N_EPOCHS, train_loader, LR):
     # initailize the network, optimizer and loss function
     optimizer = optim.Adam(net.parameters(), lr=LR)
     criterion = nn.MSELoss()
@@ -26,14 +26,9 @@ def train(net, N_EPOCHS, train_loader):
             # prediction
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
-            
+        
             y_pred = net(x_batch)
             loss = criterion(y_pred, y_batch)
-
-            if i == 0:
-                print(x_batch.size())
-                print(y_batch.size())
-                print(y_pred.size())
 
             # update
             optimizer.zero_grad()
@@ -51,9 +46,37 @@ def train(net, N_EPOCHS, train_loader):
     torch.save(net.state_dict(), "weights/trans")
     writer.close()
 
+def plot_one_stock(X_test, y_test, net, path, transformer=False):
+    stock_idx = 0
+    X_test = X_test[:, stock_idx, :, :] # choose the first stock
+    X_test = X_test.transpose(0, 1).transpose(1, 2)
+    y_test = y_test[0][stock_idx]
+    net.load_state_dict(torch.load(path))
+    net.eval()
+
+    with torch.no_grad():
+        if transformer:
+            y_test = y_test[:, -1]
+            y_pred = net(X_test)
+            print(y_pred.size())
+            y_pred = y_pred[:, -1, :].squeeze(0)
+            print(y_pred.size())
+        else:
+            y_pred = net(X_test)
+
+    time_step = range(len(y_test))
+    plt.plot(time_step, y_pred, label='Prediction')
+    plt.plot(time_step, y_test, label='Actual price')
+    plt.title("one stock grpah")
+    plt.ylabel("normalized adjusted close price")
+    plt.xlabel("time step")
+    plt.legend()
+    #plt.savefig("stock.png")
+    plt.show() 
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(datetime.today().strftime('%Y-%m-%d'))
     print(f"Using {device}")
     # fix the random seed
     torch.manual_seed(0)
@@ -67,40 +90,34 @@ if __name__ == "__main__":
             'data/sp500_joined_low.csv',
             'data/sp500_joined_volume.csv']
     MODEL_PATH = 'weights/trans'
+    # hyperparams
     BATCH_SIZE = 100
-    N_EPOCHS = 1
+    N_EPOCHS = 3
     N_LAGS = 25
-    NUM_WORKERS = 2
-    LR = 0.001
+    NUM_WORKERS = 0
+    LR = 0.002
 
-    # Model parameters
-    d_model = 32  # Lattent dim
-    q = 8  # Query size
-    v = 8  # Value size
-    h = 8  # Number of heads
-    N = 4  # Number of encoder and decoder to stack
-    attention_size = 12  # Attention window size
-    dropout = 0.2  # Dropout rate
-    pe = None  # Positional encoding
-    chunk_mode = None
-
-    # features sizes
-    d_input = 6  # adj_close, open, close, high, low, volume
-    d_output = 1 # only predict adj_close
+    # model parameters
+    dim_input = 6
+    output_sequence_length = 1
+    dec_seq_len = 2
+    dim_val = 10
+    dim_attn = 12
+    n_heads = 8 
+    n_decoder_layers = 4
+    n_encoder_layers = 6
+    #init network
+    net = Transformer(dim_val, dim_attn, dim_input, dec_seq_len, output_sequence_length, n_decoder_layers, n_encoder_layers, n_heads)
 
     # load the dataset
-    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, transformer=True)
-    train_dataset = StockDataset(X_train, y_train, transformer=True)
+    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS)
+    train_dataset = StockDataset(X_train, y_train)
     train_loader = DataLoader(dataset=train_dataset,     
-                            batch_size=BATCH_SIZE,
-                            num_workers=NUM_WORKERS)
-    test_dataset = StockDataset(X_test, y_test, transformer=True)
+                            batch_size=BATCH_SIZE)
+    test_dataset = StockDataset(X_test, y_test)
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
 
-    net = Transformer(d_input, d_model, d_output, q, v, h, N, attention_size=attention_size,
-                  dropout=dropout, chunk_mode=chunk_mode, pe=pe).to(device)
-
-    #train(net, N_EPOCHS, train_loader)
-    #eval(net, MODEL_PATH, test_loader)
-    plot_one_stock(X_test, y_test, net, MODEL_PATH, transformer=True)
+    train(net, N_EPOCHS, train_loader, LR)
+    eval(net, MODEL_PATH, test_loader)
+    plot_one_stock(X_test, y_test, net, MODEL_PATH)

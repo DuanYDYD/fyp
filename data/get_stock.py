@@ -14,7 +14,7 @@ import yfinance as yf
 
 # minor fix of the original code
 yf.pdr_override()
-# for experiment only
+# c
 TICKERS = ["GIS", "NKE", "GS", "IBM","AAPL", 
             "ETN", "FLT", "KO", "HST", "LRCX"]
 

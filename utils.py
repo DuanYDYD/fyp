@@ -44,6 +44,21 @@ def create_input_data(paths, n_lags, transformer=False):
                 else:
                     y.append(series[end_step])
 
+            # normalize the time series
+            X_train_ = X[:valid_ind]
+            y_train_ = y[:valid_ind]
+            max_ = np.amax(X_train_)
+            min_ = np.amin(X_train_)
+            X_train_ = (X_train_ - min_) / (max_ - min_)
+            y_train_ = (y_train_ - min_) / (max_ - min_)
+
+            X_test_ = X[valid_ind:]
+            y_test_ = y[valid_ind:]
+            max_ = np.amax(X_test_)
+            min_ = np.amin(X_test_)
+            X_test_ = (X_test_ - min_) / (max_ - min_)
+            y_test_ = (y_test_ - min_) / (max_ - min_)
+
             X_test[i].append(X[valid_ind:])
             y_test[i].append(y[valid_ind:])
             X_train[i].append(X[:valid_ind])
@@ -203,7 +218,7 @@ if __name__ == "__main__":
                             batch_size=BATCH_SIZE)
     net = Net(N_LAGS).to(device)
     #train(net, N_EPOCHS, train_loader)
-    #eval(net, MODEL_PATH, test_loader=test_loader)
+    eval(net, MODEL_PATH, test_loader=test_loader)
     plot_one_stock(X_test, y_test, net, MODEL_PATH)
 
     #The MSE is  0.0003273937825206491
