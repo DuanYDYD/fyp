@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
-from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import Dataset, DataLoader
 
 import numpy as np
@@ -125,7 +124,9 @@ def plot_one_stock(X_test, y_test, net, path, transformer=False):
         if transformer:
             y_test = y_test[:, -1]
             y_pred = net(X_test)
+            print(y_pred.size())
             y_pred = y_pred[:, -1, :].squeeze(0)
+            print(y_pred.size())
         else:
             y_pred = net(X_test)
 
@@ -138,7 +139,12 @@ def plot_one_stock(X_test, y_test, net, path, transformer=False):
     plt.legend()
     #plt.savefig("stock.png")
     plt.show() 
-    
+
+def scheduler(optimizer,lr):    
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+    return optimizer
+
 class Net(nn.Module):
     # simple forward network
     def __init__(self, n_lags):
@@ -182,7 +188,7 @@ def train(net, N_EPOCHS, train_loader):
                 # ...log the running loss
                 print("loss:", running_loss / 100, " batch:", (i + 1))
                 writer.add_scalar('training loss ff{}'.format(datetime.today().strftime('%Y-%m-%d')),
-                                     running_loss / 100, (i + 1) + epoch * 9700)
+                                     running_loss / 100, (i + 1) + epoch * 9747)
                 running_loss = 0.0
 
     torch.save(net.state_dict(), "weights/ff")

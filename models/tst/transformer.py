@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from tst.trans_block import MultiHeadAttentionBlock, PositionalEncoding, get_data
+from .trans_block import MultiHeadAttentionBlock, PositionalEncoding, get_data
 
 
 class EncoderLayer(torch.nn.Module):
