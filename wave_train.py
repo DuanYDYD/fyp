@@ -52,8 +52,9 @@ if __name__ == "__main__":
     print(datetime.today().strftime('%Y-%m-%d'))
     print(f"Using {device}")
     # fix the random seed
-    torch.manual_seed(0)
-    np.random.seed(0)
+    # 0 999 333 111 123
+    torch.manual_seed(333)
+    np.random.seed(333)
 
     # paths
     PATHS = ['data/sp500_joined_adj.csv', 
@@ -62,7 +63,7 @@ if __name__ == "__main__":
             'data/sp500_joined_high.csv',
             'data/sp500_joined_low.csv',
             'data/sp500_joined_volume.csv']
-    MODEL_PATH = 'weights/wave/wave0'
+    MODEL_PATH = 'weights/wave/wave_3332se3'
     # hyperparams
     BATCH_SIZE = 100
     N_EPOCHS = 3
@@ -71,9 +72,9 @@ if __name__ == "__main__":
     LR = 0.01
 
     # model parameters
-    layer_size = 2
-    stack_size = 7#try5
-    in_channels = 6
+    layer_size = 3
+    stack_size = 3
+    in_channels = 6 # 6 features
     res_channels = 32
 
     net = WaveNet(layer_size, stack_size, in_channels, res_channels)
@@ -90,7 +91,17 @@ if __name__ == "__main__":
     train(net, N_EPOCHS, train_loader, LR, MODEL_PATH)
     eval(net, MODEL_PATH, test_loader)
     plot_one_stock(X_test, y_test, net, MODEL_PATH)
-    #The MSE is  0.0002094345309450686 64 28
-    #The MSE is  8.248745888667056e-05 32 28
-    #The MSE is  0.0004989148894638609 32 27
+    #The MSE is  0.0002094345309450686 28 64
+    #The MSE is  0.0004989148894638609 27 32
+    #The MSE is  0.00017359222582504684 25 32
+    #The MSE is  0.00017477968110319773 22 32
+    #The MSE is  0.00011558366908265208 41 32
+
+    #The MSE is  8.248745888667056e-05 28 32 se1
+    #The MSE is  9.72329971868175e-05 28 32 se2
+
+    #The MSE is  9.702412049717072e-05 33 32
+    #The MSE is  0.0006524808009704072 32 32
+    #The MSE is  0.00016231196748245488 33 32 se2
+    #The MSE is  6.993623421993204e-05 33 32 se3
 

@@ -41,7 +41,7 @@ def train(net, N_EPOCHS, train_loader, LR, path):
                 # ...log the running loss
                 print("loss:", running_loss / 100, " batch:", (i + 1))
                 writer.add_scalar('training loss trans{}'.format(datetime.today().strftime('%Y-%m-%d')),
-                                     running_loss / 100, (i + 1) + epoch * 9747)
+                                     running_loss / 100, (i + 1) + epoch * len(train_loader))
                 running_loss = 0.0
 
     torch.save(net.state_dict(), path)
@@ -53,8 +53,9 @@ if __name__ == "__main__":
     print(datetime.today().strftime('%Y-%m-%d'))
     print(f"Using {device}")
     # fix the random seed
-    torch.manual_seed(0)
-    np.random.seed(0)
+    # 0 999 333 111 123
+    torch.manual_seed(123)
+    np.random.seed(123)
 
     # paths
     PATHS = ['data/sp500_joined_adj.csv', 
@@ -63,7 +64,7 @@ if __name__ == "__main__":
             'data/sp500_joined_high.csv',
             'data/sp500_joined_low.csv',
             'data/sp500_joined_volume.csv']
-    MODEL_PATH = 'weights/trans/trans_12632'
+    MODEL_PATH = 'weights/trans/trans_12632se5'
     # hyperparams
     BATCH_SIZE = 100
     N_EPOCHS = 3
@@ -94,12 +95,19 @@ if __name__ == "__main__":
 
     #train(net, N_EPOCHS, train_loader, LR, MODEL_PATH)
     eval(net, MODEL_PATH, test_loader)
-    #plot_one_stock(X_test, y_test, net, MODEL_PATH)
+    #tensorboard --logdir=runs
+    plot_one_stock(X_test, y_test, net, MODEL_PATH)
     #The MSE is  0.0003273937825206491 ff
     #The MSE is  0.0001812670836877635 33 10
     #The MSE is  0.0003356801978449813 64   10
     #The MSE is  0.0001615765498885661964 64 32
     #The MSE is  0.0005471179923741005 64 64
     #The MSE is  0.00015378855410287437 33 32
-    #The MSE is  9.102330600960862e-05 42 32
     #The MSE is  0.00025121048723348866 126 32
+    #the MSE is  0.00020284409984236388 21 32
+
+    #The MSE is  9.102330600960862e-05 42 32 se1
+    #The MSE is  0.0003441643159479967 42 32 se2
+    #the MSE is  4.66587838643595e-05 42 32 se3
+    #The MSE is  0.00013140986475010456 se4
+    #The MSE is  9.675200523454657e-05
