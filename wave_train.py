@@ -53,8 +53,8 @@ if __name__ == "__main__":
     print(f"Using {device}")
     # fix the random seed
     # 0 999 333 111 123
-    torch.manual_seed(333)
-    np.random.seed(333)
+    torch.manual_seed(123)
+    np.random.seed(123)
 
     # paths
     PATHS = ['data/sp500_joined_adj.csv', 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
             'data/sp500_joined_high.csv',
             'data/sp500_joined_low.csv',
             'data/sp500_joined_volume.csv']
-    MODEL_PATH = 'weights/wave/wave_3332se3'
+    MODEL_PATH = 'weights/wave/wave_2832se5'
     # hyperparams
     BATCH_SIZE = 100
     N_EPOCHS = 3
@@ -72,8 +72,8 @@ if __name__ == "__main__":
     LR = 0.01
 
     # model parameters
-    layer_size = 3
-    stack_size = 3
+    layer_size = 2
+    stack_size = 8
     in_channels = 6 # 6 features
     res_channels = 32
 
@@ -99,9 +99,15 @@ if __name__ == "__main__":
 
     #The MSE is  8.248745888667056e-05 28 32 se1
     #The MSE is  9.72329971868175e-05 28 32 se2
+    #The MSE is  5.453151254948243e-05 28 32 se3
+    #The MSE is  0.00016852398847098173 28 32 se4
+    #The MSE is  0.00017561992712846868 28 32 se5
 
     #The MSE is  9.702412049717072e-05 33 32
     #The MSE is  0.0006524808009704072 32 32
     #The MSE is  0.00016231196748245488 33 32 se2
     #The MSE is  6.993623421993204e-05 33 32 se3
+    #The MSE is  0.00046851240992866765 33 32 se4
+    #The MSE is  0.0002352291541823431 33 32 se5
+    
 

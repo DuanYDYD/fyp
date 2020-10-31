@@ -98,8 +98,6 @@ if __name__ == "__main__":
     #tensorboard --logdir=runs
     plot_one_stock(X_test, y_test, net, MODEL_PATH)
     #The MSE is  0.0003273937825206491 ff
-    #The MSE is  0.0001812670836877635 33 10
-    #The MSE is  0.0003356801978449813 64   10
     #The MSE is  0.0001615765498885661964 64 32
     #The MSE is  0.0005471179923741005 64 64
     #The MSE is  0.00015378855410287437 33 32

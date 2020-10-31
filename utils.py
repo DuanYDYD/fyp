@@ -12,12 +12,17 @@ from datetime import datetime
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def create_input_data(paths, n_lags, transformer=False):
+def create_input_data(paths, n_lags, transformer=False, y_days=1):
+    """ n_lags is days_length of input x
+        y_days is days_length of output y
+        use n_lags=25 and y_days=1 for mid-term first
+     """
     # dividve the series(N=7)
     X, y = [], []
     X_test, y_test = [[] for _ in range(len(paths))], [[] for _ in range(len(paths))]
     X_train, y_train = [[] for _ in range(len(paths))], [[] for _ in range(len(paths))]
 
+    print("creating input data...")
     for i, path in enumerate(paths):
         # load data
         series_arr = pd.read_csv(path, index_col=0)
@@ -26,48 +31,45 @@ def create_input_data(paths, n_lags, transformer=False):
         series_arr = series_arr.interpolate().dropna(axis=1)
         series_arr = series_arr.values.T
 
-        # normalize the time series
-        max_ = np.amax(series_arr)
-        min_ = np.amin(series_arr)
-        series_arr = (series_arr - min_) / (max_ - min_)
-
-        #0.8 for training, 0.2 for test
-        valid_ind = int(len(series_arr[0]) * 0.8)
-
         for series in series_arr:
-            for step in range(len(series) - n_lags):
+            for step in range(len(series) - n_lags - y_days + 1):
                 end_step = step + n_lags
                 X.append(series[step:end_step])
                 if transformer:    
                     y.append(series[step+1 :end_step+1])
                 else:
-                    y.append(series[end_step])
+                    y.append(series[end_step:end_step+y_days])
 
-            # normalize the time series
-            X_train_ = X[:valid_ind]
-            y_train_ = y[:valid_ind]
-            max_ = np.amax(X_train_)
-            min_ = np.amin(X_train_)
-            X_train_ = (X_train_ - min_) / (max_ - min_)
-            y_train_ = (y_train_ - min_) / (max_ - min_)
+        #0.8 for training, 0.2 for test
+        valid_ind = int(len(X) * 0.8)
 
-            X_test_ = X[valid_ind:]
-            y_test_ = y[valid_ind:]
-            max_ = np.amax(X_test_)
-            min_ = np.amin(X_test_)
-            X_test_ = (X_test_ - min_) / (max_ - min_)
-            y_test_ = (y_test_ - min_) / (max_ - min_)
+        # normalize the time series
+        X_train_ = X[:valid_ind]
+        y_train_ = y[:valid_ind]
+        
+        max_ = max(np.amax(X_train_), np.amax(y_train_))
+        min_ = min(np.amin(X_train_), np.amin(y_train_))
+        X_train_ = (X_train_ - min_) / (max_ - min_)
+        y_train_ = (y_train_ - min_) / (max_ - min_)
 
-            X_test[i].append(X[valid_ind:])
-            y_test[i].append(y[valid_ind:])
-            X_train[i].append(X[:valid_ind])
-            y_train[i].append(y[:valid_ind])
-            X =[]
-            y =[]
-    """ return a tensor with shape: X:(num_features, num_tickers, each_ticker_len, n_lags) 
-                                    y:(num_features, num_tickers, each_ticker_len, 1)
+        X_test_ = X[valid_ind:]
+        y_test_ = y[valid_ind:]
+        max_ = max(np.amax(X_test_), np.amax(y_test_))
+        min_ = min(np.amin(X_test_), np.amin(y_test_))
+        X_test_ = (X_test_ - min_) / (max_ - min_)
+        y_test_ = (y_test_ - min_) / (max_ - min_)
+
+        X_test[i].append(X_test_)
+        y_test[i].append(y_test_)
+        X_train[i].append(X_train_)
+        y_train[i].append(y_train_)
+        X =[]
+        y =[]
+    """ return a tensor with shape: X:(num_features, 1, num_samples, n_lags) 
+                                    y:(num_features, 1, num_samples, y_days)
         if transformer =True:
-                                 y:(num_features, num_tickers, each_ticker_len, n_lags) """
+                                 y:(num_features, 1, num_samples, n_lags) """
+
     return torch.FloatTensor(X_train), torch.FloatTensor(y_train), torch.FloatTensor(X_test), torch.FloatTensor(y_test)
 
 class StockDataset(Dataset):
@@ -82,7 +84,7 @@ class StockDataset(Dataset):
             self.y = torch.flatten(y[0], end_dim=1).unsqueeze(dim=2)
         else:
             self.X = torch.flatten(X, start_dim=1, end_dim=2).transpose(0, 1).transpose(1, 2)
-            self.y = torch.flatten(y[0], end_dim=1).unsqueeze(dim=1)
+            self.y = torch.flatten(y[0], end_dim=1)
         print("Input data Size: ", self.X.size())
         print("Label Size: ", self.y.size())
 
@@ -113,6 +115,7 @@ def eval(net, path ,test_loader):
     print("The MSE is ", mse)
 
 def plot_one_stock(X_test, y_test, net, path, transformer=False):
+    # wrong function need to be fix!
     stock_idx = 0
     X_test = X_test[:, stock_idx, :, :] # choose the first stock
     X_test = X_test.transpose(0, 1).transpose(1, 2)
@@ -147,14 +150,14 @@ def scheduler(optimizer,lr):
 
 class Net(nn.Module):
     # simple forward network
-    def __init__(self, n_lags):
+    def __init__(self, n_lags, y_days):
         super(Net, self).__init__()
         self.fc1 = nn.Linear(6 * n_lags, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 128)
         self.fc4 = nn.Linear(128, 64)
         self.fc5 = nn.Linear(64, 32)
-        self.fc6 = nn.Linear(32, 1)
+        self.fc6 = nn.Linear(32, y_days)
 
     def forward(self, x):
         x = F.relu(self.fc1(torch.flatten(x, start_dim=1)))
@@ -215,19 +218,20 @@ if __name__ == "__main__":
     BATCH_SIZE = 100
     N_EPOCHS = 3
     N_LAGS = 25
+    Y_DAYS = 1
 
     # load the dataset
-    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS)
+    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
     train_dataset = StockDataset(X_train, y_train)
     train_loader = DataLoader(dataset=train_dataset,     
                             batch_size=BATCH_SIZE)
     test_dataset = StockDataset(X_test, y_test)
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
-    net = Net(N_LAGS).to(device)
-    #train(net, N_EPOCHS, train_loader)
+
+    net = Net(N_LAGS, Y_DAYS).to(device)
+    train(net, N_EPOCHS, train_loader)
     eval(net, MODEL_PATH, test_loader=test_loader)
-    plot_one_stock(X_test, y_test, net, MODEL_PATH)
 
     #The MSE is  0.0003273937825206491
     
