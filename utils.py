@@ -12,12 +12,12 @@ from datetime import datetime
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def create_input_data(paths, n_lags, transformer=False, y_days=1):
+def create_input_data(paths, n_lags, y_days=1):
     """ n_lags is days_length of input x
         y_days is days_length of output y
         use n_lags=25 and y_days=1 for mid-term first
      """
-    # dividve the series(N=7)
+
     X, y = [], []
     X_test, y_test = [[] for _ in range(len(paths))], [[] for _ in range(len(paths))]
     X_train, y_train = [[] for _ in range(len(paths))], [[] for _ in range(len(paths))]
@@ -35,10 +35,7 @@ def create_input_data(paths, n_lags, transformer=False, y_days=1):
             for step in range(len(series) - n_lags - y_days + 1):
                 end_step = step + n_lags
                 X.append(series[step:end_step])
-                if transformer:    
-                    y.append(series[step+1 :end_step+1])
-                else:
-                    y.append(series[end_step:end_step+y_days])
+                y.append(series[end_step:end_step+y_days])
 
         #0.8 for training, 0.2 for test
         valid_ind = int(len(X) * 0.8)
@@ -46,6 +43,7 @@ def create_input_data(paths, n_lags, transformer=False, y_days=1):
         # normalize the time series
         X_train_ = X[:valid_ind]
         y_train_ = y[:valid_ind]
+  
         
         max_ = max(np.amax(X_train_), np.amax(y_train_))
         min_ = min(np.amin(X_train_), np.amin(y_train_))
@@ -66,10 +64,7 @@ def create_input_data(paths, n_lags, transformer=False, y_days=1):
         X =[]
         y =[]
     """ return a tensor with shape: X:(num_features, 1, num_samples, n_lags) 
-                                    y:(num_features, 1, num_samples, y_days)
-        if transformer =True:
-                                 y:(num_features, 1, num_samples, n_lags) """
-
+                                    y:(num_features, 1, num_samples, y_days)"""
     return torch.FloatTensor(X_train), torch.FloatTensor(y_train), torch.FloatTensor(X_test), torch.FloatTensor(y_test)
 
 class StockDataset(Dataset):
@@ -77,14 +72,10 @@ class StockDataset(Dataset):
         X : (n_lags, features(6))
         y: (n_lags, adj_close)
      """
-    def __init__(self, X, y, transformer=False):
+    def __init__(self, X, y):
         super().__init__()
-        if transformer:
-            self.X = torch.flatten(X, start_dim=1, end_dim=2).transpose(0, 1).transpose(1, 2)
-            self.y = torch.flatten(y[0], end_dim=1).unsqueeze(dim=2)
-        else:
-            self.X = torch.flatten(X, start_dim=1, end_dim=2).transpose(0, 1).transpose(1, 2)
-            self.y = torch.flatten(y[0], end_dim=1)
+        self.X = torch.flatten(X, start_dim=1, end_dim=2).transpose(0, 1).transpose(1, 2)
+        self.y = torch.flatten(y[0], end_dim=1)
         print("Input data Size: ", self.X.size())
         print("Label Size: ", self.y.size())
 
@@ -97,8 +88,8 @@ class StockDataset(Dataset):
     def __len__(self):
         return self.X.shape[0]
 
-def eval(net, path ,test_loader):
-    # evalute the model and plot the graph of a choosing stock
+def eval(net, path, test_loader):
+    # evalute the model using MSE
     net.load_state_dict(torch.load(path))
     criterion = nn.MSELoss(reduction = 'sum') #Square error
     net.eval()
@@ -114,24 +105,17 @@ def eval(net, path ,test_loader):
         mse = total_loss / len(test_loader.dataset)
     print("The MSE is ", mse)
 
-def plot_one_stock(X_test, y_test, net, path, transformer=False):
+def plot_one_stock(X_test, y_test, net, path, length):
     # wrong function need to be fix!
-    stock_idx = 0
-    X_test = X_test[:, stock_idx, :, :] # choose the first stock
-    X_test = X_test.transpose(0, 1).transpose(1, 2)
-    y_test = y_test[0][stock_idx]
+    X_test = X_test[:, 0, :, :] # choose the first stock
+    X_test = X_test.transpose(0, 1).transpose(1, 2)[:length]
+    y_test = y_test[0, 0, :length, :]
+ 
     net.load_state_dict(torch.load(path))
     net.eval()
 
     with torch.no_grad():
-        if transformer:
-            y_test = y_test[:, -1]
-            y_pred = net(X_test)
-            print(y_pred.size())
-            y_pred = y_pred[:, -1, :].squeeze(0)
-            print(y_pred.size())
-        else:
-            y_pred = net(X_test)
+        y_pred = net(X_test)
 
     time_step = range(len(y_test))
     plt.plot(time_step, y_pred, label='Prediction')
@@ -230,8 +214,9 @@ if __name__ == "__main__":
                             batch_size=BATCH_SIZE)
 
     net = Net(N_LAGS, Y_DAYS).to(device)
-    train(net, N_EPOCHS, train_loader)
-    eval(net, MODEL_PATH, test_loader=test_loader)
+    #train(net, N_EPOCHS, train_loader)
+    #eval(net, MODEL_PATH, test_loader=test_loader)
+    plot_one_stock(X_test, y_test, net, MODEL_PATH, length=1000)
 
     #The MSE is  0.0003273937825206491
     
