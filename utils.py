@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+from models import AlexNet
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -211,14 +212,15 @@ if __name__ == "__main__":
     # sample framework
     # fix the random seed
     print(datetime.today().strftime('%Y-%m-%d'))
+    # 0 999 333 111 123
     torch.manual_seed(0)
     np.random.seed(0)
 
     # hyperparameters
-    PATHS = oil_data_paths()
+    PATHS = stock_data_paths()
     MODEL_PATH="weights/ff"
     BATCH_SIZE = 100
-    N_EPOCHS = 3
+    N_EPOCHS = 1
     N_LAGS = 25
     Y_DAYS = 1
     NUM_FEA = 1
@@ -232,7 +234,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
 
-    net = Net(N_LAGS, NUM_FEA, Y_DAYS).to(device)
+    net = AlexNet(N_LAGS, Y_DAYS).to(device)
     train(net, N_EPOCHS, train_loader)
     eval(net, MODEL_PATH, test_loader=test_loader)
     #plot_one_stock(X_test, y_test, net, MODEL_PATH, length=1000)
