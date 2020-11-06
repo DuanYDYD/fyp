@@ -70,6 +70,7 @@ class Transformer(torch.nn.Module):
         self.enc_input_fc = nn.Linear(input_size, dim_val)
         self.dec_input_fc = nn.Linear(input_size, dim_val)
         self.out_fc = nn.Linear(dec_seq_len * dim_val, out_seq_len)
+        #self.out_fc = nn.Linear(dim_val, out_seq_len)
     
     def forward(self, x):
         #encoder

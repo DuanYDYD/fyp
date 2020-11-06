@@ -134,9 +134,9 @@ def scheduler(optimizer,lr):
 
 class Net(nn.Module):
     # simple forward network
-    def __init__(self, n_lags, y_days):
+    def __init__(self, n_lags, num_fea, y_days):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(6 * n_lags, 256)
+        self.fc1 = nn.Linear(num_fea * n_lags, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 128)
         self.fc4 = nn.Linear(128, 64)
@@ -183,6 +183,29 @@ def train(net, N_EPOCHS, train_loader):
     torch.save(net.state_dict(), "weights/ff")
     writer.close()
 
+def stock_data_paths():
+    paths = ['data/stock_data/sp500_joined_adj.csv', 
+            'data/stock_data/sp500_joined_open.csv',
+            'data/stock_data/sp500_joined_close.csv',
+            'data/stock_data/sp500_joined_high.csv',
+            'data/stock_data/sp500_joined_low.csv',
+            'data/stock_data/sp500_joined_volume.csv']
+    return paths
+
+def crypto_data_paths():
+    paths = [
+            'data/crypto_data/coins_joined_open.csv',
+            'data/crypto_data/coins_joined_close.csv',
+            'data/crypto_data/coins_joined_high.csv',
+            'data/crypto_data/coins_joined_low.csv',
+            'data/crypto_data/coins_joined_volumeto.csv',
+            'data/crypto_data/coins_joined_volumefrom.csv', ]
+    return paths
+
+def oil_data_paths():
+    paths = [
+            'data/oil_data/oil_price.csv',]
+    return paths
 
 if __name__ == "__main__":
     # sample framework
@@ -192,17 +215,13 @@ if __name__ == "__main__":
     np.random.seed(0)
 
     # hyperparameters
-    PATHS = ['data/sp500_joined_adj.csv', 
-            'data/sp500_joined_open.csv',
-            'data/sp500_joined_close.csv',
-            'data/sp500_joined_high.csv',
-            'data/sp500_joined_low.csv',
-            'data/sp500_joined_volume.csv']
+    PATHS = oil_data_paths()
     MODEL_PATH="weights/ff"
     BATCH_SIZE = 100
     N_EPOCHS = 3
     N_LAGS = 25
     Y_DAYS = 1
+    NUM_FEA = 1
 
     # load the dataset
     X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
@@ -213,11 +232,12 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
 
-    net = Net(N_LAGS, Y_DAYS).to(device)
-    #train(net, N_EPOCHS, train_loader)
-    #eval(net, MODEL_PATH, test_loader=test_loader)
-    plot_one_stock(X_test, y_test, net, MODEL_PATH, length=1000)
+    net = Net(N_LAGS, NUM_FEA, Y_DAYS).to(device)
+    train(net, N_EPOCHS, train_loader)
+    eval(net, MODEL_PATH, test_loader=test_loader)
+    #plot_one_stock(X_test, y_test, net, MODEL_PATH, length=1000)
 
-    #The MSE is  0.0003273937825206491
+    #The MSE is  0.002010555131915416
+    #The MSE is  0.004173629942736138
     
 

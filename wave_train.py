@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 from models import WaveNet
-from utils import create_input_data, StockDataset, eval, scheduler, plot_one_stock
+from utils import create_input_data, StockDataset, eval, scheduler, stock_data_paths, crypto_data_paths
 
 def train(net, N_EPOCHS, train_loader, LR, path):
     # initailize the network, optimizer and loss function
@@ -53,34 +53,33 @@ if __name__ == "__main__":
     print(f"Using {device}")
     # fix the random seed
     # 0 999 333 111 123
-    torch.manual_seed(123)
-    np.random.seed(123)
+    SEED = 111
 
-    # paths
-    PATHS = ['data/sp500_joined_adj.csv', 
-            'data/sp500_joined_open.csv',
-            'data/sp500_joined_close.csv',
-            'data/sp500_joined_high.csv',
-            'data/sp500_joined_low.csv',
-            'data/sp500_joined_volume.csv']
-    MODEL_PATH = 'weights/wave/wave_2832se5'
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
+
     # hyperparams
     BATCH_SIZE = 100
     N_EPOCHS = 3
     N_LAGS = 25
+    Y_DAYS = 1
     NUM_WORKERS = 0
     LR = 0.01
 
     # model parameters
     layer_size = 2
-    stack_size = 8
+    stack_size = 5
     in_channels = 6 # 6 features
     res_channels = 32
 
-    net = WaveNet(layer_size, stack_size, in_channels, res_channels)
+    # paths
+    PATHS = stock_data_paths()
+    MODEL_PATH = 'weights/wave/stock/{l}_{s}_{r}_{y}_{seed}'.format(l=layer_size, s=stack_size, r=res_channels, y=Y_DAYS, seed=SEED)
+
+    net = WaveNet(layer_size, stack_size, in_channels, res_channels, Y_DAYS)
 
     # load the dataset
-    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS)
+    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
     train_dataset = StockDataset(X_train, y_train)
     train_loader = DataLoader(dataset=train_dataset,     
                             batch_size=BATCH_SIZE)
@@ -90,24 +89,18 @@ if __name__ == "__main__":
 
     train(net, N_EPOCHS, train_loader, LR, MODEL_PATH)
     eval(net, MODEL_PATH, test_loader)
-    plot_one_stock(X_test, y_test, net, MODEL_PATH)
-    #The MSE is  0.0002094345309450686 28 64
-    #The MSE is  0.0004989148894638609 27 32
-    #The MSE is  0.00017359222582504684 25 32
-    #The MSE is  0.00017477968110319773 22 32
-    #The MSE is  0.00011558366908265208 41 32
 
-    #The MSE is  8.248745888667056e-05 28 32 se1
-    #The MSE is  9.72329971868175e-05 28 32 se2
-    #The MSE is  5.453151254948243e-05 28 32 se3
-    #The MSE is  0.00016852398847098173 28 32 se4
-    #The MSE is  0.00017561992712846868 28 32 se5
 
-    #The MSE is  9.702412049717072e-05 33 32
-    #The MSE is  0.0006524808009704072 32 32
-    #The MSE is  0.00016231196748245488 33 32 se2
-    #The MSE is  6.993623421993204e-05 33 32 se3
-    #The MSE is  0.00046851240992866765 33 32 se4
-    #The MSE is  0.0002352291541823431 33 32 se5
-    
+    #The MSE is  0.00040897312399241256 28 32 se123 1
+    #The MSE is  0.0007783590546027762 28 32 se111 1
+    #The MSE is  0.0003596830506049608 se 333
+    #The MSE is  0.00013038388036484518 se 999
+    #The MSE is  0.0007731251604861855   
 
+
+    #The MSE is  0.00030988159688583 25 se0
+    #The MSE is  0.00024071033664234363 25 se999
+    #The MSE is  0.0003270250107385795 25 se 333
+    #The MSE is  0.013896949215793887 25 se 111
+    #The MSE is  0.013603525761472259 27
+    #

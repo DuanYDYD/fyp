@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 from models import Transformer
-from utils import create_input_data, StockDataset, eval, scheduler, plot_one_stock
+from utils import create_input_data, StockDataset, eval, scheduler, stock_data_paths
 
 def train(net, N_EPOCHS, train_loader, LR, path):
     # initailize the network, optimizer and loss function
@@ -54,33 +54,32 @@ if __name__ == "__main__":
     print(f"Using {device}")
     # fix the random seed
     # 0 999 333 111 123
-    torch.manual_seed(123)
-    np.random.seed(123)
+    SEED = 111
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
 
-    # paths
-    PATHS = ['data/sp500_joined_adj.csv', 
-            'data/sp500_joined_open.csv',
-            'data/sp500_joined_close.csv',
-            'data/sp500_joined_high.csv',
-            'data/sp500_joined_low.csv',
-            'data/sp500_joined_volume.csv']
-    MODEL_PATH = 'weights/trans/trans_12632se5'
     # hyperparams
     BATCH_SIZE = 100
     N_EPOCHS = 3
     N_LAGS = 25
+    Y_DAYS = 1
     NUM_WORKERS = 0
     LR = 0.01
 
     # model parameters
     dim_input = 6
-    output_sequence_length = 1
+    output_sequence_length = Y_DAYS
     dec_seq_len = 2
     dim_val = 32
     dim_attn = 12
     n_heads = 8 
-    n_encoder_layers = 12
-    n_decoder_layers = 6
+    n_encoder_layers = 4
+    n_decoder_layers = 2
+
+    # paths
+    PATHS = stock_data_paths()
+    MODEL_PATH = 'weights/trans/stock/{e}_{d}_{v}_{y}_se{seed}'.format(e=n_encoder_layers, d=n_decoder_layers, v=dim_val, y=Y_DAYS, seed=SEED)
+
     #init network
     net = Transformer(dim_val, dim_attn, dim_input, dec_seq_len, output_sequence_length, n_decoder_layers, n_encoder_layers, n_heads)
 
@@ -93,19 +92,19 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
 
-    #train(net, N_EPOCHS, train_loader, LR, MODEL_PATH)
+    train(net, N_EPOCHS, train_loader, LR, MODEL_PATH)
     eval(net, MODEL_PATH, test_loader)
     #tensorboard --logdir=runs
-    plot_one_stock(X_test, y_test, net, MODEL_PATH)
-    #The MSE is  0.0003273937825206491 ff
-    #The MSE is  0.0001615765498885661964 64 32
-    #The MSE is  0.0005471179923741005 64 64
-    #The MSE is  0.00015378855410287437 33 32
-    #The MSE is  0.00025121048723348866 126 32
-    #the MSE is  0.00020284409984236388 21 32
 
-    #The MSE is  9.102330600960862e-05 42 32 se1
-    #The MSE is  0.0003441643159479967 42 32 se2
-    #the MSE is  4.66587838643595e-05 42 32 se3
-    #The MSE is  0.00013140986475010456 se4
-    #The MSE is  9.675200523454657e-05
+    #The MSE is  0.001403585192173687
+    #The MSE is  0.0012347645364538464 64
+    #The MSE is  0.0018348685480677198
+    #The MSE is  0.0012968256152697348
+
+    #The MSE is  0.001730601882723917
+    #The MSE is  0.0008342179569141754 se 999
+    #The MSE is  0.0014005199038011039 se 111
+    #The MSE is  0.005995613119423791 sigmoid
+
+
+   

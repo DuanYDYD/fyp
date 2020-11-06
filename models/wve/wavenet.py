@@ -175,7 +175,7 @@ class ResidualStack(torch.nn.Module):
 
 
 class DensNet(torch.nn.Module):
-    def __init__(self, channels, skip_size=4, target_size=1):
+    def __init__(self, channels, skip_size, target_size):
         """
         The last network of WaveNet
         :param channels: number of channels for input
@@ -200,7 +200,7 @@ class DensNet(torch.nn.Module):
 
 
 class WaveNet(torch.nn.Module):
-    def __init__(self, layer_size, stack_size, in_channels, res_channels):
+    def __init__(self, layer_size, stack_size, in_channels, res_channels, y_days):
         """
         Stack residual blocks by layer and stack size
         :param layer_size: integer, 10 = layer[dilation=1, dilation=2, 4, 8, 16, 32, 64, 128, 256, 512]
@@ -219,7 +219,7 @@ class WaveNet(torch.nn.Module):
 
         skip_size = self.calc_output_size(torch.rand((123, 6, 25)))
 
-        self.densnet = DensNet(in_channels, skip_size=skip_size)
+        self.densnet = DensNet(in_channels, skip_size=skip_size, target_size=y_days)
 
     @staticmethod
     def calc_receptive_fields(layer_size, stack_size):
