@@ -54,22 +54,22 @@ if __name__ == "__main__":
     print(f"Using {device}")
     # fix the random seed
     # 0 999 333 111 123
-    SEED = 111
+    SEED = 999
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
     # hyperparams
     BATCH_SIZE = 100
     N_EPOCHS = 3
-    N_LAGS = 25
-    Y_DAYS = 1
+    N_LAGS = 90
+    Y_DAYS = 3
     NUM_WORKERS = 0
     LR = 0.01
 
     # model parameters
     dim_input = 6
     output_sequence_length = Y_DAYS
-    dec_seq_len = 2
+    dec_seq_len = Y_DAYS
     dim_val = 32
     dim_attn = 12
     n_heads = 8 
@@ -78,13 +78,13 @@ if __name__ == "__main__":
 
     # paths
     PATHS = stock_data_paths()
-    MODEL_PATH = 'weights/trans/stock/{e}_{d}_{v}_{y}_se{seed}'.format(e=n_encoder_layers, d=n_decoder_layers, v=dim_val, y=Y_DAYS, seed=SEED)
+    MODEL_PATH = 'weights/trans/stock/3days/{e}_{d}_{v}_{y}_seed{seed}'.format(e=n_encoder_layers, d=n_decoder_layers, v=dim_val, y=Y_DAYS, seed=SEED)
 
     #init network
     net = Transformer(dim_val, dim_attn, dim_input, dec_seq_len, output_sequence_length, n_decoder_layers, n_encoder_layers, n_heads)
 
     # load the dataset
-    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS)
+    X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
     train_dataset = StockDataset(X_train, y_train)
     train_loader = DataLoader(dataset=train_dataset,     
                             batch_size=BATCH_SIZE)
@@ -96,15 +96,15 @@ if __name__ == "__main__":
     eval(net, MODEL_PATH, test_loader)
     #tensorboard --logdir=runs
 
-    #The MSE is  0.001403585192173687
-    #The MSE is  0.0012347645364538464 64
-    #The MSE is  0.0018348685480677198
-    #The MSE is  0.0012968256152697348
+    #The MSE is  0.0010176260894923762 0
+    #The MSE is  0.0008223066139244062 333
+    #The MSE is  0.0010279362977172954 111 ep 3 ss
+    #The MSE is  0.0008899663603104443 123 ep 3 ss
+    #The MSE is  0.0008842754231835146 999 dim1 5 epoch
 
-    #The MSE is  0.001730601882723917
-    #The MSE is  0.0008342179569141754 se 999
-    #The MSE is  0.0014005199038011039 se 111
-    #The MSE is  0.005995613119423791 sigmoid
-
+    #Multi horizon 3 days
+    #The MSE is  0.006249775759577008 se0
+    #The MSE is  0.002294417190863021 s999
+    
 
    

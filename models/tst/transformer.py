@@ -69,8 +69,9 @@ class Transformer(torch.nn.Module):
         #Dense layers for managing network inputs and outputs
         self.enc_input_fc = nn.Linear(input_size, dim_val)
         self.dec_input_fc = nn.Linear(input_size, dim_val)
-        self.out_fc = nn.Linear(dec_seq_len * dim_val, out_seq_len)
-        #self.out_fc = nn.Linear(dim_val, out_seq_len)
+        #self.out_fc = nn.Linear(dec_seq_len * dim_val, out_seq_len)
+        #self.fc1 = nn.Linear(dim_val, dim_val)
+        self.out_fc = nn.Linear(dim_val, 1)
     
     def forward(self, x):
         #encoder
@@ -84,6 +85,11 @@ class Transformer(torch.nn.Module):
             d = dec(d, e)
             
         #output
-        x = self.out_fc(d.flatten(start_dim=1))
+        #x = self.out_fc(d.flatten(start_dim=1))
+        #x = F.relu(self.fc1(d))
+        if self.dec_seq_len == 1:
+            x = self.out_fc(d).squeeze().unsqueeze(dim=1)
+        else:
+            x = self.out_fc(d).squeeze()
         
         return x

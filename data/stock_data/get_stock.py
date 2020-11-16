@@ -116,7 +116,7 @@ def compile_data():
 
 
 if __name__ == "__main__":
-    save_sp500_tickers(tickers=False)
+    save_sp500_tickers(tickers=TICKERS)
     get_data_from_yahoo(reload_sp500=False)
     compile_data()
 

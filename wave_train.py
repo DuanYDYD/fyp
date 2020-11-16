@@ -34,7 +34,7 @@ def train(net, N_EPOCHS, train_loader, LR, path):
             loss.backward()
             optimizer.step()
             learning_rate = LR / (1 + ((i + 1) / 250))
-            optimizer = scheduler(optimizer, learning_rate)
+            #optimizer = scheduler(optimizer, learning_rate)
 
             running_loss += loss.item()
             if (i + 1) % 100 == 0:
@@ -53,14 +53,14 @@ if __name__ == "__main__":
     print(f"Using {device}")
     # fix the random seed
     # 0 999 333 111 123
-    SEED = 111
+    SEED = 0
 
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
     # hyperparams
     BATCH_SIZE = 100
-    N_EPOCHS = 3
+    N_EPOCHS = 20
     N_LAGS = 25
     Y_DAYS = 1
     NUM_WORKERS = 0
@@ -68,15 +68,15 @@ if __name__ == "__main__":
 
     # model parameters
     layer_size = 2
-    stack_size = 5
+    stack_size = 8
     in_channels = 6 # 6 features
-    res_channels = 32
+    res_channels = 64
 
     # paths
-    PATHS = stock_data_paths()
-    MODEL_PATH = 'weights/wave/stock/{l}_{s}_{r}_{y}_{seed}'.format(l=layer_size, s=stack_size, r=res_channels, y=Y_DAYS, seed=SEED)
+    PATHS = crypto_data_paths()
+    MODEL_PATH = 'weights/wave/crypto/3days/{l}_{s}_{r}_{y}_{seed}'.format(l=layer_size, s=stack_size, r=res_channels, y=Y_DAYS, seed=SEED)
 
-    net = WaveNet(layer_size, stack_size, in_channels, res_channels, Y_DAYS)
+    net = WaveNet(layer_size, stack_size, in_channels, res_channels, Y_DAYS, N_LAGS)
 
     # load the dataset
     X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
@@ -103,4 +103,16 @@ if __name__ == "__main__":
     #The MSE is  0.0003270250107385795 25 se 333
     #The MSE is  0.013896949215793887 25 se 111
     #The MSE is  0.013603525761472259 27
-    #
+    #The MSE is  0.0010279362977172954
+
+    #3days
+    #The MSE is  0.0021889363289384965 3 12
+
+    #crypto tttttThe MSE is  0.024310924815408152
+    #The MSE is  0.0070591940913490294 0
+    #The MSE is  0.00427691602650934 999
+    #The MSE is  0.0011420539577504558 333
+    #The MSE is  0.0022885015814313055 111
+    #The MSE is  0.004622108112049166 123
+
+    # #The MSE is  0.06945980288040866

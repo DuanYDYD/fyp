@@ -13,6 +13,7 @@ from models import AlexNet
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+
 def create_input_data(paths, n_lags, y_days=1):
     """ n_lags is days_length of input x
         y_days is days_length of output y
@@ -150,7 +151,7 @@ class Net(nn.Module):
         x = F.relu(self.fc3(x))
         x = F.relu(self.fc4(x))
         x = F.relu(self.fc5(x))
-        x = torch.sigmoid(self.fc6(x))
+        x = self.fc6(x)
         return x
 
 def train(net, N_EPOCHS, train_loader):
@@ -165,6 +166,7 @@ def train(net, N_EPOCHS, train_loader):
             # prediction
             x_batch = x_batch.to(device)
             y_batch = y_batch.to(device)
+
             y_pred = net(x_batch)
             loss = criterion(y_pred, y_batch)
 
@@ -213,8 +215,9 @@ if __name__ == "__main__":
     # fix the random seed
     print(datetime.today().strftime('%Y-%m-%d'))
     # 0 999 333 111 123
-    torch.manual_seed(0)
-    np.random.seed(0)
+    seed = 0
+    torch.manual_seed(seed)
+    np.random.seed(seed)
 
     # hyperparameters
     PATHS = stock_data_paths()
@@ -223,7 +226,7 @@ if __name__ == "__main__":
     N_EPOCHS = 1
     N_LAGS = 25
     Y_DAYS = 1
-    NUM_FEA = 1
+    NUM_FEA = 6
 
     # load the dataset
     X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
@@ -234,12 +237,35 @@ if __name__ == "__main__":
     test_loader = DataLoader(dataset=test_dataset,     
                             batch_size=BATCH_SIZE)
 
-    net = AlexNet(N_LAGS, Y_DAYS).to(device)
+    net = Net(N_LAGS, NUM_FEA, Y_DAYS).to(device)
     train(net, N_EPOCHS, train_loader)
     eval(net, MODEL_PATH, test_loader=test_loader)
     #plot_one_stock(X_test, y_test, net, MODEL_PATH, length=1000)
 
+    #3days
     #The MSE is  0.002010555131915416
-    #The MSE is  0.004173629942736138
+    #The MSE is  0.000600625116686841 0
+    #The MSE is  0.0014864215499231206 999
+    #The MSE is  0.0003593130212152998 333
+    #The MSE is  0.016339303557924782 111
+
+    #one
+    #The MSE is  0.0004845883850779906
+
+    #crypto
+    #The MSE is  0.011515415741276557 0
+    #The MSE is  0.014853116996245188 999
+    #The MSE is  0.010776204578627912 333
+    #The MSE is  0.016339303557924782 111
+    #The MSE is  0.008061979453906902 123
+    #3days
+    #The MSE is  0.024310924815408152
+    #The MSE is  0.040075978838297506 999
+    #The MSE is  0.3763759960878511 333
+    #The MSE is  0.09134629813813185 111
+    #The MSE is  0.04323502427055346 123
+    #The MSE is  0.3763759960878511
+
+
     
 
