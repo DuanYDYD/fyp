@@ -15,8 +15,10 @@ import yfinance as yf
 # minor fix of the original code
 yf.pdr_override()
 # c
-TICKERS = ["GIS", "NKE", "GS", "IBM","AAPL", 
+TICKERS2 = ["GIS", "NKE", "GS", "IBM","AAPL", 
             "ETN", "FLT", "KO", "HST", "LRCX"]
+
+TICKERS = ['BTC-USD', 'ETH-USD', 'USDT-USD', 'XRP-USD', 'LINK-USD', 'LTC-USD', 'BCH-USD']
 
 def save_sp500_tickers(tickers=False):
     if tickers:
@@ -116,7 +118,7 @@ def compile_data():
 
 
 if __name__ == "__main__":
-    save_sp500_tickers(tickers=TICKERS)
+    save_sp500_tickers(tickers=True)
     get_data_from_yahoo(reload_sp500=False)
     compile_data()
 

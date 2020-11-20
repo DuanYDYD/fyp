@@ -11,13 +11,13 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 from models import Transformer
-from utils import create_input_data, StockDataset, eval, scheduler, stock_data_paths
+from utils import create_input_data, StockDataset, eval, scheduler, stock_data_paths, crypto_data_paths
 
 def train(net, N_EPOCHS, train_loader, LR, path):
     # initailize the network, optimizer and loss function
     optimizer = optim.Adam(net.parameters(), lr=LR)
     criterion = nn.MSELoss()
-    writer = SummaryWriter(log_dir='runs/trans')
+    #writer = SummaryWriter(log_dir='runs/trans')
 
     running_loss = 0
     for epoch in range(N_EPOCHS):
@@ -33,19 +33,18 @@ def train(net, N_EPOCHS, train_loader, LR, path):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            learning_rate = LR / (1 + ((i + 1) / 250))
-            optimizer = scheduler(optimizer, learning_rate)
+            #learning_rate = LR / (1 + ((i + 1) / 250))
+            #optimizer = scheduler(optimizer, learning_rate)
 
             running_loss += loss.item()
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 50 == 0:
                 # ...log the running loss
-                print("loss:", running_loss / 100, " batch:", (i + 1))
-                writer.add_scalar('training loss trans{}'.format(datetime.today().strftime('%Y-%m-%d')),
-                                     running_loss / 100, (i + 1) + epoch * len(train_loader))
+                print("loss:", running_loss / 50, " batch:", (i + 1))
                 running_loss = 0.0
+        print("epoch ", epoch)
 
     torch.save(net.state_dict(), path)
-    writer.close()
+    #writer.close()
 
 
 if __name__ == "__main__":
@@ -54,35 +53,35 @@ if __name__ == "__main__":
     print(f"Using {device}")
     # fix the random seed
     # 0 999 333 111 123
-    SEED = 999
+    SEED = 0
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
     # hyperparams
     BATCH_SIZE = 100
-    N_EPOCHS = 3
+    N_EPOCHS = 20
     N_LAGS = 90
     Y_DAYS = 3
     NUM_WORKERS = 0
-    LR = 0.01
+    LR = 0.0005
 
     # model parameters
     dim_input = 6
     output_sequence_length = Y_DAYS
     dec_seq_len = Y_DAYS
-    dim_val = 32
-    dim_attn = 12
+    dim_val = 64
+    dim_attn = 12#12
     n_heads = 8 
     n_encoder_layers = 4
     n_decoder_layers = 2
 
     # paths
-    PATHS = stock_data_paths()
+    PATHS = crypto_data_paths()
     MODEL_PATH = 'weights/trans/stock/3days/{e}_{d}_{v}_{y}_seed{seed}'.format(e=n_encoder_layers, d=n_decoder_layers, v=dim_val, y=Y_DAYS, seed=SEED)
 
     #init network
     net = Transformer(dim_val, dim_attn, dim_input, dec_seq_len, output_sequence_length, n_decoder_layers, n_encoder_layers, n_heads)
-
+    #net.load_state_dict(torch.load(MODEL_PATH))
     # load the dataset
     X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
     train_dataset = StockDataset(X_train, y_train)
@@ -105,6 +104,10 @@ if __name__ == "__main__":
     #Multi horizon 3 days
     #The MSE is  0.006249775759577008 se0
     #The MSE is  0.002294417190863021 s999
+
+    #crypto
+    #3days The MSE is  0.0027482047664187455
+    #one The MSE is  6.264090478465372e-05 350
     
 
    

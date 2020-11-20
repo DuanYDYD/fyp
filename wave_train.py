@@ -17,7 +17,7 @@ def train(net, N_EPOCHS, train_loader, LR, path):
     # initailize the network, optimizer and loss function
     optimizer = optim.Adam(net.parameters(), lr=LR)
     criterion = nn.MSELoss()
-    writer = SummaryWriter(log_dir='runs/wave')
+    #writer = SummaryWriter(log_dir='runs/wave')
 
     running_loss = 0
     for epoch in range(N_EPOCHS):
@@ -33,19 +33,16 @@ def train(net, N_EPOCHS, train_loader, LR, path):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            learning_rate = LR / (1 + ((i + 1) / 250))
+            #learning_rate = LR / (1 + ((i + 1) / 250))
             #optimizer = scheduler(optimizer, learning_rate)
 
             running_loss += loss.item()
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 50 == 0:
                 # ...log the running loss
-                print("loss:", running_loss / 100, " batch:", (i + 1))
-                writer.add_scalar('training loss wave{}'.format(datetime.today().strftime('%Y-%m-%d')),
-                                     running_loss / 100, (i + 1) + epoch * 9747)
+                print("loss:", running_loss / 50, " batch:", (i + 1))
                 running_loss = 0.0
-
+        print("epoch ", epoch)
     torch.save(net.state_dict(), path)
-    writer.close()
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -60,15 +57,15 @@ if __name__ == "__main__":
 
     # hyperparams
     BATCH_SIZE = 100
-    N_EPOCHS = 20
-    N_LAGS = 25
-    Y_DAYS = 1
+    N_EPOCHS = 400#20 400
+    N_LAGS = 90
+    Y_DAYS = 3
     NUM_WORKERS = 0
-    LR = 0.01
+    LR = 0.0001 #5
 
     # model parameters
     layer_size = 2
-    stack_size = 8
+    stack_size = 29
     in_channels = 6 # 6 features
     res_channels = 64
 
@@ -77,6 +74,7 @@ if __name__ == "__main__":
     MODEL_PATH = 'weights/wave/crypto/3days/{l}_{s}_{r}_{y}_{seed}'.format(l=layer_size, s=stack_size, r=res_channels, y=Y_DAYS, seed=SEED)
 
     net = WaveNet(layer_size, stack_size, in_channels, res_channels, Y_DAYS, N_LAGS)
+    net.load_state_dict(torch.load(MODEL_PATH))
 
     # load the dataset
     X_train, y_train, X_test, y_test = create_input_data(PATHS, N_LAGS, Y_DAYS)
@@ -108,11 +106,8 @@ if __name__ == "__main__":
     #3days
     #The MSE is  0.0021889363289384965 3 12
 
-    #crypto tttttThe MSE is  0.024310924815408152
-    #The MSE is  0.0070591940913490294 0
-    #The MSE is  0.00427691602650934 999
-    #The MSE is  0.0011420539577504558 333
-    #The MSE is  0.0022885015814313055 111
-    #The MSE is  0.004622108112049166 123
-
-    # #The MSE is  0.06945980288040866
+    #crypto 
+    #one The MSE is  3.615179643878579e-05 64
+    #one The MSE is  0.00010890758233900188 32 
+    #3days The MSE is  0.0015587311456627848 64 3 12
+    #The MSE is  0.0016606460898516138

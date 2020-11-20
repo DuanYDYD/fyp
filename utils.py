@@ -197,8 +197,8 @@ def stock_data_paths():
 
 def crypto_data_paths():
     paths = [
-            'data/crypto_data/coins_joined_open.csv',
             'data/crypto_data/coins_joined_close.csv',
+            'data/crypto_data/coins_joined_open.csv',
             'data/crypto_data/coins_joined_high.csv',
             'data/crypto_data/coins_joined_low.csv',
             'data/crypto_data/coins_joined_volumeto.csv',
@@ -220,7 +220,7 @@ if __name__ == "__main__":
     np.random.seed(seed)
 
     # hyperparameters
-    PATHS = stock_data_paths()
+    PATHS = crypto_data_paths()
     MODEL_PATH="weights/ff"
     BATCH_SIZE = 100
     N_EPOCHS = 1
@@ -253,18 +253,9 @@ if __name__ == "__main__":
     #The MSE is  0.0004845883850779906
 
     #crypto
-    #The MSE is  0.011515415741276557 0
-    #The MSE is  0.014853116996245188 999
-    #The MSE is  0.010776204578627912 333
-    #The MSE is  0.016339303557924782 111
-    #The MSE is  0.008061979453906902 123
-    #3days
-    #The MSE is  0.024310924815408152
-    #The MSE is  0.040075978838297506 999
-    #The MSE is  0.3763759960878511 333
-    #The MSE is  0.09134629813813185 111
-    #The MSE is  0.04323502427055346 123
-    #The MSE is  0.3763759960878511
+    #251 The MSE is  0.00026943998771194566
+    #3days The MSE is  0.004126041888846618
+
 
 
     
