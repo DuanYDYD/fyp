@@ -252,9 +252,7 @@ if __name__ == "__main__":
     #one
     #The MSE is  0.0004845883850779906
 
-    #crypto
-    #251 The MSE is  0.00026943998771194566
-    #3days The MSE is  0.004126041888846618
+
 
 
 
